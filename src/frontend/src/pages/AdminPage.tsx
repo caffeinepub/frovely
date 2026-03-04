@@ -24,6 +24,7 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  CreditCard,
   DollarSign,
   Edit2,
   Loader2,
@@ -496,6 +497,178 @@ function ProductsTab({
   );
 }
 
+const STRIPE_KEY_STORAGE = "frovely_stripe_secret_key";
+
+function PaymentSettingsTab() {
+  const [stripeKey, setStripeKey] = useState(
+    () => localStorage.getItem(STRIPE_KEY_STORAGE) ?? "",
+  );
+  const [inputKey, setInputKey] = useState(
+    () => localStorage.getItem(STRIPE_KEY_STORAGE) ?? "",
+  );
+  const [saved, setSaved] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+
+  const isSaved = stripeKey.length > 0;
+
+  const handleSave = () => {
+    const trimmed = inputKey.trim();
+    if (!trimmed.startsWith("sk_")) {
+      return;
+    }
+    localStorage.setItem(STRIPE_KEY_STORAGE, trimmed);
+    setStripeKey(trimmed);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+    toast.success("Stripe key saved. Payments are now active.");
+  };
+
+  const handleRemove = () => {
+    localStorage.removeItem(STRIPE_KEY_STORAGE);
+    setStripeKey("");
+    setInputKey("");
+    toast.success("Stripe key removed.");
+  };
+
+  const maskedKey = stripeKey
+    ? `${stripeKey.slice(0, 8)}${"•".repeat(Math.min(stripeKey.length - 12, 24))}${stripeKey.slice(-4)}`
+    : "";
+
+  return (
+    <div className="space-y-6">
+      {/* Status banner */}
+      <div
+        className={`rounded-2xl border p-5 flex items-start gap-4 ${isSaved ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}`}
+        data-ocid="admin.payment.status_panel"
+      >
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isSaved ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"}`}
+        >
+          <CreditCard className="w-5 h-5" />
+        </div>
+        <div>
+          <p
+            className={`font-body font-semibold text-sm ${isSaved ? "text-green-800" : "text-amber-800"}`}
+          >
+            {isSaved ? "Payments Active" : "Payments Not Configured"}
+          </p>
+          <p
+            className={`font-body text-xs mt-0.5 ${isSaved ? "text-green-700" : "text-amber-700"}`}
+          >
+            {isSaved
+              ? `Stripe is connected and accepting payments. Current key: ${maskedKey}`
+              : "Enter your Stripe secret key below to enable checkout payments."}
+          </p>
+        </div>
+      </div>
+
+      {/* How to get key */}
+      {!isSaved && (
+        <div className="rounded-2xl border border-border bg-muted/30 p-5 space-y-3">
+          <p className="font-body font-semibold text-sm text-foreground">
+            How to get your Stripe key:
+          </p>
+          <ol className="space-y-1.5 font-body text-sm text-muted-foreground list-decimal list-inside">
+            <li>
+              Go to{" "}
+              <a
+                href="https://stripe.com"
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline underline-offset-2"
+              >
+                stripe.com
+              </a>{" "}
+              and create a free account
+            </li>
+            <li>
+              Click <strong>Developers</strong> in the top right
+            </li>
+            <li>
+              Click <strong>API Keys</strong>
+            </li>
+            <li>
+              Copy your <strong>Secret key</strong> (starts with{" "}
+              <code className="bg-muted px-1 rounded text-xs">sk_live_</code> or{" "}
+              <code className="bg-muted px-1 rounded text-xs">sk_test_</code>)
+            </li>
+            <li>Paste it below and click Save</li>
+          </ol>
+          <p className="font-body text-xs text-muted-foreground/70 pt-1">
+            Use <code className="bg-muted px-1 rounded text-xs">sk_test_</code>{" "}
+            first to test with card number{" "}
+            <code className="bg-muted px-1 rounded text-xs">
+              4242 4242 4242 4242
+            </code>{" "}
+            before going live.
+          </p>
+        </div>
+      )}
+
+      {/* Key input */}
+      <div className="space-y-3">
+        <Label
+          htmlFor="stripe-key"
+          className="font-body text-sm font-medium text-foreground"
+        >
+          Stripe Secret Key
+        </Label>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Input
+              id="stripe-key"
+              type={showKey ? "text" : "password"}
+              placeholder="sk_live_... or sk_test_..."
+              value={inputKey}
+              onChange={(e) => setInputKey(e.target.value)}
+              className="font-mono text-sm border-border rounded-xl h-11 pr-20"
+              data-ocid="admin.payment.stripe_key_input"
+            />
+            <button
+              type="button"
+              onClick={() => setShowKey((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 font-body text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showKey ? "Hide" : "Show"}
+            </button>
+          </div>
+          <Button
+            onClick={handleSave}
+            disabled={!inputKey.trim().startsWith("sk_")}
+            className="bg-primary text-white hover:bg-primary/90 rounded-full font-body font-semibold px-6 shadow-pink disabled:opacity-40"
+            data-ocid="admin.payment.save_button"
+          >
+            {saved ? "Saved!" : "Save Key"}
+          </Button>
+        </div>
+        {inputKey.length > 0 && !inputKey.trim().startsWith("sk_") && (
+          <p
+            className="font-body text-xs text-red-500"
+            data-ocid="admin.payment.key_error_state"
+          >
+            Key must start with <code>sk_live_</code> or <code>sk_test_</code>
+          </p>
+        )}
+      </div>
+
+      {/* Remove key */}
+      {isSaved && (
+        <div className="pt-2 border-t border-border">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRemove}
+            className="font-body rounded-full text-xs text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300"
+            data-ocid="admin.payment.remove_button"
+          >
+            Remove Stripe Key
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AnalyticsCards({ orders }: { orders: Order[] | undefined }) {
   const [visits, setVisits] = useState(0);
 
@@ -728,7 +901,7 @@ export default function AdminPage() {
           <div className="space-y-6">
             <AnalyticsCards orders={orders} />
             <Tabs defaultValue="orders" className="space-y-6">
-              <TabsList className="bg-muted/50 border border-border rounded-full p-1 w-fit">
+              <TabsList className="bg-muted/50 border border-border rounded-full p-1 w-fit flex-wrap">
                 <TabsTrigger
                   value="orders"
                   className="rounded-full font-body font-medium text-sm px-5 data-[state=active]:bg-white data-[state=active]:shadow-xs data-[state=active]:text-primary transition-all"
@@ -754,6 +927,14 @@ export default function AdminPage() {
                       {products.length}
                     </span>
                   )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="payment"
+                  className="rounded-full font-body font-medium text-sm px-5 data-[state=active]:bg-white data-[state=active]:shadow-xs data-[state=active]:text-primary transition-all"
+                  data-ocid="admin.payment_tab"
+                >
+                  <CreditCard className="w-4 h-4 mr-1.5" />
+                  Payment Settings
                 </TabsTrigger>
               </TabsList>
 
@@ -785,6 +966,21 @@ export default function AdminPage() {
                     products={products}
                     isLoading={productsLoading}
                   />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="payment">
+                <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
+                  <div>
+                    <h2 className="font-display text-lg font-semibold text-foreground">
+                      Payment Settings
+                    </h2>
+                    <p className="font-body text-xs text-muted-foreground mt-1">
+                      Connect your Stripe account to accept card payments at
+                      checkout.
+                    </p>
+                  </div>
+                  <PaymentSettingsTab />
                 </div>
               </TabsContent>
             </Tabs>
