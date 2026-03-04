@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* Frovely Palette — OKLCH */
+    /* Light pink: #f8c9d6 → oklch(0.87 0.06 355) */
+    /* Soft pink:  #ffd6e2 → oklch(0.91 0.05 355) */
+    /* White: #ffffff       → oklch(1 0 0) */
+    /* Dark gray: #333333   → oklch(0.26 0 0) */
+    /* Blush mid: #f3b8cb   → oklch(0.82 0.08 355) */
+
+    --background: 0.98 0.01 355;
+    --foreground: 0.26 0 0;
+    --card: 1 0 0;
+    --card-foreground: 0.26 0 0;
+    --popover: 1 0 0;
+    --popover-foreground: 0.26 0 0;
+    --primary: 0.72 0.12 355;
+    --primary-foreground: 1 0 0;
+    --secondary: 0.91 0.05 355;
+    --secondary-foreground: 0.26 0 0;
+    --muted: 0.94 0.03 355;
+    --muted-foreground: 0.52 0.03 355;
+    --accent: 0.87 0.06 355;
+    --accent-foreground: 0.26 0 0;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.89 0.04 355;
+    --input: 0.89 0.04 355;
+    --ring: 0.72 0.12 355;
+    --chart-1: 0.72 0.12 355;
+    --chart-2: 0.82 0.08 355;
+    --chart-3: 0.91 0.05 355;
+    --chart-4: 0.87 0.06 355;
+    --chart-5: 0.65 0.14 355;
+    --sidebar: 1 0 0;
+    --sidebar-foreground: 0.26 0 0;
+    --sidebar-primary: 0.72 0.12 355;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.91 0.05 355;
+    --sidebar-accent-foreground: 0.26 0 0;
+    --sidebar-border: 0.89 0.04 355;
+    --sidebar-ring: 0.72 0.12 355;
+
+    /* Brand tokens */
+    --pink-light: 0.87 0.06 355;
+    --pink-soft: 0.91 0.05 355;
+    --pink-deep: 0.72 0.12 355;
+    --pink-blush: 0.82 0.08 355;
+    --cream: 0.98 0.01 355;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-body {
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .text-pink-brand {
+    color: oklch(var(--pink-deep));
+  }
+
+  .bg-pink-light {
+    background-color: oklch(var(--pink-light));
+  }
+
+  .bg-pink-soft {
+    background-color: oklch(var(--pink-soft));
+  }
+
+  .bg-cream {
+    background-color: oklch(var(--cream));
+  }
+
+  /* Scroll fade-in animation */
+  .fade-in-section {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  }
+
+  .fade-in-section.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Float animation for product images — safe to use on non-sticky elements */
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-10px); }
+  }
+
+  /* Shimmer for loading */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      oklch(var(--pink-soft)) 0%,
+      oklch(var(--pink-light)) 50%,
+      oklch(var(--pink-soft)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Star rating */
+  .star-filled {
+    color: oklch(0.78 0.13 60);
+  }
+
+  /* Gradient overlay */
+  .hero-overlay {
+    background: linear-gradient(
+      135deg,
+      oklch(0.72 0.12 355 / 0.7) 0%,
+      oklch(0.26 0 0 / 0.3) 100%
+    );
+  }
+
+  /* Soft card shadow */
+  .card-shadow {
+    box-shadow:
+      0 2px 8px oklch(0.72 0.12 355 / 0.08),
+      0 8px 32px oklch(0.72 0.12 355 / 0.06);
+  }
+
+  .card-shadow-hover:hover {
+    box-shadow:
+      0 4px 16px oklch(0.72 0.12 355 / 0.14),
+      0 16px 48px oklch(0.72 0.12 355 / 0.1);
+    transform: translateY(-2px);
+  }
+}
