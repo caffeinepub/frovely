@@ -27,10 +27,9 @@ import {
   DollarSign,
   Edit2,
   Loader2,
-  LogIn,
+  Lock,
   LogOut,
   Package,
-  ShieldAlert,
   ShoppingBag,
   TrendingUp,
 } from "lucide-react";
@@ -39,14 +38,14 @@ import { toast } from "sonner";
 import type { Order, Product } from "../backend.d";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useGetAllOrders,
   useGetAllProducts,
-  useInitializeAccessControl,
-  useIsCallerAdmin,
   useUpdateProduct,
 } from "../hooks/useQueries";
+
+const ADMIN_PASSWORD = "Harisanghu000";
+const ADMIN_AUTH_KEY = "frovely_admin_auth";
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
@@ -576,19 +575,123 @@ function AnalyticsCards({ orders }: { orders: Order[] | undefined }) {
   );
 }
 
+function PasswordLoginForm({ onSuccess }: { onSuccess: () => void }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    // Small delay for UX feel
+    setTimeout(() => {
+      if (password === ADMIN_PASSWORD) {
+        localStorage.setItem(ADMIN_AUTH_KEY, "true");
+        onSuccess();
+      } else {
+        setError("Incorrect password. Please try again.");
+        setPassword("");
+      }
+      setIsLoading(false);
+    }, 400);
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        {/* Logo / Brand */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/60 mb-5">
+            <Lock className="w-7 h-7 text-primary" strokeWidth={1.5} />
+          </div>
+          <h1 className="font-display text-2xl font-semibold text-foreground tracking-tight">
+            Frovely Admin
+          </h1>
+          <p className="font-body text-sm text-muted-foreground mt-1.5">
+            Enter your password to access the dashboard
+          </p>
+        </div>
+
+        {/* Card */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-3xl border border-border p-8 shadow-sm space-y-5"
+        >
+          <div className="space-y-2">
+            <Label
+              htmlFor="admin-password"
+              className="font-body text-sm font-medium text-foreground"
+            >
+              Admin Password
+            </Label>
+            <Input
+              id="admin-password"
+              type="password"
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError("");
+              }}
+              className="font-body border-border rounded-xl h-11 focus-visible:ring-primary"
+              autoComplete="current-password"
+              data-ocid="admin.password_input"
+            />
+            {error && (
+              <p
+                className="font-body text-xs text-red-500 flex items-center gap-1.5 pt-0.5"
+                data-ocid="admin.login_error_state"
+              >
+                <span className="inline-block w-1 h-1 rounded-full bg-red-500 flex-shrink-0" />
+                {error}
+              </p>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isLoading || !password}
+            className="w-full bg-primary text-white hover:bg-primary/90 rounded-full font-body font-semibold h-11 shadow-pink transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:scale-100"
+            data-ocid="admin.login_button"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              "Enter Dashboard"
+            )}
+          </Button>
+        </form>
+
+        {/* Subtle brand footer */}
+        <p className="text-center font-body text-xs text-muted-foreground/60 mt-6">
+          Frovely &mdash; Scalp Care Redefined
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
-  const { login, clear, identity, isLoggingIn, isInitializing } =
-    useInternetIdentity();
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem(ADMIN_AUTH_KEY) === "true";
+  });
+
   const { data: orders, isLoading: ordersLoading } = useGetAllOrders();
   const { data: products, isLoading: productsLoading } = useGetAllProducts();
-  const { mutateAsync: initAccess, isPending: isClaiming } =
-    useInitializeAccessControl();
-  const [adminToken, setAdminToken] = useState("");
-  const [claimError, setClaimError] = useState("");
 
-  const isAuthenticated = !!identity;
-  const principal = identity?.getPrincipal().toString();
+  const handleLogout = () => {
+    localStorage.removeItem(ADMIN_AUTH_KEY);
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <PasswordLoginForm onSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -606,229 +709,86 @@ export default function AdminPage() {
                   Frovely Dashboard
                 </h1>
               </div>
-              {isAuthenticated ? (
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="font-body text-xs text-muted-foreground">
-                      Logged in as
-                    </p>
-                    <p className="font-mono text-xs text-foreground font-medium max-w-36 truncate">
-                      {principal}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clear}
-                    className="font-body rounded-full border-border gap-1.5 text-sm"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    Logout
-                  </Button>
-                </div>
-              ) : null}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="font-body rounded-full border-border gap-1.5 text-sm"
+                data-ocid="admin.logout_button"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Logout
+              </Button>
             </div>
           </div>
         </div>
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Not authenticated */}
-          {!isAuthenticated ? (
-            <div className="text-center py-20 space-y-6 max-w-md mx-auto">
-              <div className="w-20 h-20 rounded-full bg-accent/60 flex items-center justify-center mx-auto">
-                <ShieldAlert
-                  className="w-10 h-10 text-primary"
-                  strokeWidth={1.5}
-                />
-              </div>
-              <div className="space-y-2">
-                <h2 className="font-display text-xl font-semibold text-foreground">
-                  Admin Access Required
-                </h2>
-                <p className="font-body text-muted-foreground text-sm leading-relaxed">
-                  Please sign in with Internet Identity to access the Frovely
-                  admin dashboard. Only authorized administrators can view
-                  orders and manage products.
-                </p>
-              </div>
-              <Button
-                onClick={login}
-                disabled={isLoggingIn || isInitializing}
-                className="bg-primary text-white hover:bg-primary/90 rounded-full font-body font-semibold px-8 shadow-pink transition-all duration-300 hover:scale-105"
-              >
-                {isLoggingIn || isInitializing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-4 h-4 mr-2" />
-                    Sign In
-                  </>
-                )}
-              </Button>
-            </div>
-          ) : adminLoading ? (
-            <div className="flex items-center justify-center py-20 gap-3">
-              <Loader2 className="w-6 h-6 text-primary animate-spin" />
-              <span className="font-body text-sm text-muted-foreground">
-                Checking admin access...
-              </span>
-            </div>
-          ) : !isAdmin ? (
-            <div className="text-center py-20 space-y-6 max-w-md mx-auto">
-              <div className="w-20 h-20 rounded-full bg-accent/60 flex items-center justify-center mx-auto">
-                <ShieldAlert
-                  className="w-10 h-10 text-primary"
-                  strokeWidth={1.5}
-                />
-              </div>
-              <div className="space-y-2">
-                <h2 className="font-display text-xl font-semibold text-foreground">
-                  Claim Admin Access
-                </h2>
-                <p className="font-body text-muted-foreground text-sm leading-relaxed">
-                  Enter the admin token provided by Caffeine to register your
-                  account as the store administrator.
-                </p>
-              </div>
-              <div className="space-y-3 text-left">
-                <Label
-                  htmlFor="admin-token"
-                  className="font-body text-sm font-medium"
+          {/* Admin dashboard */}
+          <div className="space-y-6">
+            <AnalyticsCards orders={orders} />
+            <Tabs defaultValue="orders" className="space-y-6">
+              <TabsList className="bg-muted/50 border border-border rounded-full p-1 w-fit">
+                <TabsTrigger
+                  value="orders"
+                  className="rounded-full font-body font-medium text-sm px-5 data-[state=active]:bg-white data-[state=active]:shadow-xs data-[state=active]:text-primary transition-all"
+                  data-ocid="admin.orders_tab"
                 >
-                  Admin Token
-                </Label>
-                <Input
-                  id="admin-token"
-                  type="password"
-                  placeholder="Paste your admin token here"
-                  value={adminToken}
-                  onChange={(e) => {
-                    setAdminToken(e.target.value);
-                    setClaimError("");
-                  }}
-                  className="font-body border-border"
-                  data-ocid="admin.token_input"
-                />
-                {claimError && (
-                  <p
-                    className="font-body text-xs text-red-500"
-                    data-ocid="admin.claim_error_state"
-                  >
-                    {claimError}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Button
-                  onClick={async () => {
-                    if (!adminToken.trim()) {
-                      setClaimError("Please enter the admin token.");
-                      return;
-                    }
-                    try {
-                      await initAccess({ secret: adminToken.trim() });
-                      setAdminToken("");
-                      toast.success("Admin access granted successfully.");
-                    } catch {
-                      setClaimError(
-                        "Invalid token or admin already assigned. Check your token and try again.",
-                      );
-                    }
-                  }}
-                  disabled={isClaiming}
-                  className="bg-primary text-white hover:bg-primary/90 rounded-full font-body font-semibold shadow-pink"
-                  data-ocid="admin.claim_button"
-                >
-                  {isClaiming ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Claiming...
-                    </>
-                  ) : (
-                    "Claim Admin Access"
+                  <ClipboardList className="w-4 h-4 mr-1.5" />
+                  Orders
+                  {orders && orders.length > 0 && (
+                    <span className="ml-2 bg-primary text-white rounded-full text-xs px-2 py-0.5">
+                      {orders.length}
+                    </span>
                   )}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={clear}
-                  className="font-body rounded-full border-border gap-1.5"
-                  data-ocid="admin.signout_button"
+                </TabsTrigger>
+                <TabsTrigger
+                  value="products"
+                  className="rounded-full font-body font-medium text-sm px-5 data-[state=active]:bg-white data-[state=active]:shadow-xs data-[state=active]:text-primary transition-all"
+                  data-ocid="admin.products_tab"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Sign Out
-                </Button>
-              </div>
-            </div>
-          ) : (
-            /* Admin dashboard */
-            <div className="space-y-6">
-              <AnalyticsCards orders={orders} />
-              <Tabs defaultValue="orders" className="space-y-6">
-                <TabsList className="bg-muted/50 border border-border rounded-full p-1 w-fit">
-                  <TabsTrigger
-                    value="orders"
-                    className="rounded-full font-body font-medium text-sm px-5 data-[state=active]:bg-white data-[state=active]:shadow-xs data-[state=active]:text-primary transition-all"
-                    data-ocid="admin.orders_tab"
-                  >
-                    <ClipboardList className="w-4 h-4 mr-1.5" />
-                    Orders
-                    {orders && orders.length > 0 && (
-                      <span className="ml-2 bg-primary text-white rounded-full text-xs px-2 py-0.5">
-                        {orders.length}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="products"
-                    className="rounded-full font-body font-medium text-sm px-5 data-[state=active]:bg-white data-[state=active]:shadow-xs data-[state=active]:text-primary transition-all"
-                    data-ocid="admin.products_tab"
-                  >
-                    <Package className="w-4 h-4 mr-1.5" />
-                    Products
-                    {products && products.length > 0 && (
-                      <span className="ml-2 bg-primary text-white rounded-full text-xs px-2 py-0.5">
-                        {products.length}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                </TabsList>
+                  <Package className="w-4 h-4 mr-1.5" />
+                  Products
+                  {products && products.length > 0 && (
+                    <span className="ml-2 bg-primary text-white rounded-full text-xs px-2 py-0.5">
+                      {products.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
 
-                <TabsContent value="orders">
-                  <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-display text-lg font-semibold text-foreground">
-                        Order History
-                      </h2>
-                      <span className="font-body text-xs text-muted-foreground">
-                        {orders?.length ?? 0} total orders
-                      </span>
-                    </div>
-                    <OrdersTab orders={orders} isLoading={ordersLoading} />
+              <TabsContent value="orders">
+                <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-display text-lg font-semibold text-foreground">
+                      Order History
+                    </h2>
+                    <span className="font-body text-xs text-muted-foreground">
+                      {orders?.length ?? 0} total orders
+                    </span>
                   </div>
-                </TabsContent>
+                  <OrdersTab orders={orders} isLoading={ordersLoading} />
+                </div>
+              </TabsContent>
 
-                <TabsContent value="products">
-                  <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-display text-lg font-semibold text-foreground">
-                        Product Management
-                      </h2>
-                      <span className="font-body text-xs text-muted-foreground">
-                        {products?.length ?? 0} products
-                      </span>
-                    </div>
-                    <ProductsTab
-                      products={products}
-                      isLoading={productsLoading}
-                    />
+              <TabsContent value="products">
+                <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-display text-lg font-semibold text-foreground">
+                      Product Management
+                    </h2>
+                    <span className="font-body text-xs text-muted-foreground">
+                      {products?.length ?? 0} products
+                    </span>
                   </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
+                  <ProductsTab
+                    products={products}
+                    isLoading={productsLoading}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </main>
       <Footer />
