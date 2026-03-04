@@ -15,7 +15,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
-import { useCreateCheckoutSession, useCreateOrder } from "../hooks/useQueries";
+import { useActor } from "../hooks/useActor";
+import { useCreateCheckoutSession } from "../hooks/useQueries";
 
 const PRODUCT_MAP: Record<
   string,
@@ -54,7 +55,7 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const { mutateAsync: createOrder } = useCreateOrder();
+  const { actor, isFetching: actorFetching } = useActor();
   const { mutateAsync: createCheckoutSession } = useCreateCheckoutSession();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,20 +65,17 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!actor) {
+      toast.error(
+        "Payment system is initializing. Please wait a moment and try again.",
+      );
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      await createOrder({
-        customerName: name,
-        email,
-        shippingAddress: address,
-        productId,
-        quantity: BigInt(quantity),
-        totalCents,
-        stripeSessionId: "",
-      });
-
       const successUrl = `${window.location.origin}/order-success?session_id={CHECKOUT_SESSION_ID}`;
-      const cancelUrl = `${window.location.origin}/products`;
+      const cancelUrl = `${window.location.origin}/checkout?productId=${productId}&quantity=${quantity}`;
 
       const stripeUrl = await createCheckoutSession({
         items: [
@@ -96,7 +94,7 @@ export default function CheckoutPage() {
       if (stripeUrl?.startsWith("http")) {
         window.location.href = stripeUrl;
       } else {
-        toast.error("Unable to create checkout session. Please try again.");
+        toast.error("Payment system not configured. Please contact support.");
         setIsProcessing(false);
       }
     } catch (err) {
@@ -139,129 +137,142 @@ export default function CheckoutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 items-start">
             {/* Form -- left col */}
             <div className="lg:col-span-3">
-              <form
-                onSubmit={handleSubmit}
-                className="bg-white rounded-2xl border border-border p-8 space-y-6 card-shadow"
-                data-ocid="checkout.form"
-              >
-                <div>
-                  <h2 className="font-display text-xl font-semibold text-foreground mb-1">
-                    Your Information
-                  </h2>
-                  <p className="font-body text-sm text-muted-foreground">
-                    We'll send your order confirmation to your email.
+              {/* Actor loading guard */}
+              {actorFetching && !actor ? (
+                <div
+                  className="bg-white rounded-2xl border border-border p-8 card-shadow flex flex-col items-center justify-center gap-4 min-h-[280px]"
+                  data-ocid="checkout.loading_state"
+                >
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <p className="font-body text-sm text-muted-foreground text-center">
+                    Initializing secure payment system…
                   </p>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="sm:col-span-2 space-y-1.5">
-                    <Label
-                      htmlFor="checkout-name"
-                      className="font-body text-sm font-medium text-foreground"
-                    >
-                      Full Name
-                    </Label>
-                    <Input
-                      id="checkout-name"
-                      type="text"
-                      placeholder="Jane Kim"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      className="font-body border-border focus:ring-primary rounded-xl"
-                      data-ocid="checkout.name_input"
-                    />
+              ) : (
+                <form
+                  onSubmit={handleSubmit}
+                  className="bg-white rounded-2xl border border-border p-8 space-y-6 card-shadow"
+                  data-ocid="checkout.form"
+                >
+                  <div>
+                    <h2 className="font-display text-xl font-semibold text-foreground mb-1">
+                      Your Information
+                    </h2>
+                    <p className="font-body text-sm text-muted-foreground">
+                      We'll send your order confirmation to your email.
+                    </p>
                   </div>
 
-                  <div className="sm:col-span-2 space-y-1.5">
-                    <Label
-                      htmlFor="checkout-email"
-                      className="font-body text-sm font-medium text-foreground"
-                    >
-                      Email Address
-                    </Label>
-                    <Input
-                      id="checkout-email"
-                      type="email"
-                      placeholder="jane@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="font-body border-border focus:ring-primary rounded-xl"
-                      data-ocid="checkout.email_input"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="sm:col-span-2 space-y-1.5">
+                      <Label
+                        htmlFor="checkout-name"
+                        className="font-body text-sm font-medium text-foreground"
+                      >
+                        Full Name
+                      </Label>
+                      <Input
+                        id="checkout-name"
+                        type="text"
+                        placeholder="Jane Kim"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                        className="font-body border-border focus:ring-primary rounded-xl"
+                        data-ocid="checkout.name_input"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2 space-y-1.5">
+                      <Label
+                        htmlFor="checkout-email"
+                        className="font-body text-sm font-medium text-foreground"
+                      >
+                        Email Address
+                      </Label>
+                      <Input
+                        id="checkout-email"
+                        type="email"
+                        placeholder="jane@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="font-body border-border focus:ring-primary rounded-xl"
+                        data-ocid="checkout.email_input"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2 space-y-1.5">
+                      <Label
+                        htmlFor="checkout-address"
+                        className="font-body text-sm font-medium text-foreground"
+                      >
+                        Shipping Address
+                      </Label>
+                      <Textarea
+                        id="checkout-address"
+                        placeholder="123 Beauty Lane, Seoul, South Korea"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        required
+                        rows={3}
+                        className="font-body border-border focus:ring-primary resize-none rounded-xl"
+                        data-ocid="checkout.address_input"
+                      />
+                    </div>
                   </div>
 
-                  <div className="sm:col-span-2 space-y-1.5">
-                    <Label
-                      htmlFor="checkout-address"
-                      className="font-body text-sm font-medium text-foreground"
-                    >
-                      Shipping Address
-                    </Label>
-                    <Textarea
-                      id="checkout-address"
-                      placeholder="123 Beauty Lane, Seoul, South Korea"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      required
-                      rows={3}
-                      className="font-body border-border focus:ring-primary resize-none rounded-xl"
-                      data-ocid="checkout.address_input"
-                    />
+                  {/* Trust badges */}
+                  <div className="flex flex-wrap gap-4 pt-2 border-t border-border">
+                    <span className="flex items-center gap-2 text-xs font-body text-muted-foreground">
+                      <ShieldCheck className="w-4 h-4 text-green-500" />
+                      SSL Encrypted
+                    </span>
+                    <span className="flex items-center gap-2 text-xs font-body text-muted-foreground">
+                      <Lock className="w-4 h-4 text-primary" />
+                      Secured by Stripe
+                    </span>
+                    <span className="flex items-center gap-2 text-xs font-body text-muted-foreground">
+                      <RotateCcw className="w-4 h-4 text-blue-500" />
+                      30-day returns
+                    </span>
+                    <span className="flex items-center gap-2 text-xs font-body text-muted-foreground">
+                      <Truck className="w-4 h-4 text-primary" />
+                      Free shipping $75+
+                    </span>
                   </div>
-                </div>
 
-                {/* Trust badges */}
-                <div className="flex flex-wrap gap-4 pt-2 border-t border-border">
-                  <span className="flex items-center gap-2 text-xs font-body text-muted-foreground">
-                    <ShieldCheck className="w-4 h-4 text-green-500" />
-                    SSL Encrypted
-                  </span>
-                  <span className="flex items-center gap-2 text-xs font-body text-muted-foreground">
-                    <Lock className="w-4 h-4 text-primary" />
-                    Secured by Stripe
-                  </span>
-                  <span className="flex items-center gap-2 text-xs font-body text-muted-foreground">
-                    <RotateCcw className="w-4 h-4 text-blue-500" />
-                    30-day returns
-                  </span>
-                  <span className="flex items-center gap-2 text-xs font-body text-muted-foreground">
-                    <Truck className="w-4 h-4 text-primary" />
-                    Free shipping $75+
-                  </span>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate({ to: `/products/${productId}` })}
-                    className="font-body rounded-full border-border px-6"
-                    data-ocid="checkout.cancel_button"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isProcessing}
-                    className="flex-1 bg-primary text-white hover:bg-primary/90 font-body font-semibold rounded-full shadow-pink transition-all duration-300 hover:scale-[1.02] py-5 text-base"
-                    data-ocid="checkout.submit_button"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4 mr-2" />
-                        Pay ${totalDisplay} Securely
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => navigate({ to: `/products/${productId}` })}
+                      className="font-body rounded-full border-border px-6"
+                      data-ocid="checkout.cancel_button"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isProcessing}
+                      className="flex-1 bg-primary text-white hover:bg-primary/90 font-body font-semibold rounded-full shadow-pink transition-all duration-300 hover:scale-[1.02] py-5 text-base"
+                      data-ocid="checkout.submit_button"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 mr-2" />
+                          Pay ${totalDisplay} Securely
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </div>
 
             {/* Order summary -- right col */}

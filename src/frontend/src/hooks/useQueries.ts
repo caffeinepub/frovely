@@ -186,6 +186,20 @@ export function useGetStripeSessionStatus(sessionId: string) {
   });
 }
 
+export function useInitializeAccessControl() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ secret }: { secret: string }) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor._initializeAccessControlWithSecret(secret);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    },
+  });
+}
+
 export function useUpdateOrderPaymentStatus() {
   const { actor } = useActor();
   const queryClient = useQueryClient();

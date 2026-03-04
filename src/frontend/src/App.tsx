@@ -7,6 +7,7 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
+import WelcomeAnimation from "./components/WelcomeAnimation";
 
 // Lazy-load all pages for faster initial bundle
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -30,6 +31,7 @@ function PageLoader() {
 const rootRoute = createRootRoute({
   component: () => (
     <>
+      <WelcomeAnimation />
       <Suspense fallback={<PageLoader />}>
         <Outlet />
       </Suspense>

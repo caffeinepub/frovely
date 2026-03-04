@@ -172,4 +172,36 @@
       0 16px 48px oklch(0.72 0.12 355 / 0.1);
     transform: translateY(-2px);
   }
+
+  /* ── Welcome Splash Animations ─────────────────────────────── */
+  @keyframes frovelySplashIn {
+    from { opacity: 0; transform: scale(0.5) translateY(20px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @keyframes frovelySplashOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  @keyframes petalFloat {
+    0%   { opacity: 0; transform: translateY(0) scale(0); }
+    30%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-140px) scale(1) rotate(360deg); }
+  }
+
+  @keyframes welcomeTagline {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes splashOverlayFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes splashOverlayFadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
 }

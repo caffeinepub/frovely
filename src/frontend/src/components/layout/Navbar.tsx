@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
@@ -22,20 +22,19 @@ export default function Navbar() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <ShoppingBag
-              className="w-5 h-5 text-primary transition-transform group-hover:scale-110"
-              strokeWidth={1.5}
-            />
-            <span className="font-display italic text-xl md:text-2xl font-semibold text-foreground tracking-wide">
-              Frovely
-            </span>
-          </Link>
-
+        <div className="flex items-center justify-between h-14 md:h-16">
+          {/* Centered Logo */}
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <Link to="/" className="flex items-center group">
+              <img
+                src="/assets/uploads/Picsart_25-11-13_12-34-31-937-1.png"
+                alt="Frovely"
+                className="h-7 md:h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              />
+            </Link>
+          </div>
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8 ml-auto">
             <Link
               to="/"
               className="text-sm font-body font-medium text-foreground/70 hover:text-primary transition-colors duration-200 tracking-wide"
@@ -68,18 +67,20 @@ export default function Navbar() {
           </nav>
 
           {/* Mobile menu toggle */}
-          <button
-            type="button"
-            className="md:hidden p-2 rounded-lg text-foreground hover:text-primary transition-colors"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-          </button>
+          <div className="md:hidden flex items-center justify-end w-full">
+            <button
+              type="button"
+              className="p-2 rounded-lg text-foreground hover:text-primary transition-colors"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Nav */}

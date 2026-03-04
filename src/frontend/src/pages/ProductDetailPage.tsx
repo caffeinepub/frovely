@@ -13,7 +13,7 @@ import {
   Wind,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 
@@ -184,6 +184,15 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
 
   const product = STATIC_PRODUCTS[id];
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowStickyBar(window.scrollY > 380);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   if (!product) {
     return (
@@ -520,6 +529,36 @@ export default function ProductDetailPage() {
       </main>
 
       <Footer />
+
+      {/* Sticky Buy Now Bar */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-pink-100 shadow-lg transition-all duration-300"
+        style={{
+          transform: showStickyBar ? "translateY(0)" : "translateY(100%)",
+        }}
+      >
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-body text-xs text-muted-foreground">Frovely</p>
+            <p className="font-body font-semibold text-foreground text-sm truncate max-w-[180px] sm:max-w-xs">
+              {product.name}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <span className="font-display font-bold text-foreground text-base">
+              ${product.price}
+            </span>
+            <Button
+              size="sm"
+              className="bg-primary text-white hover:bg-primary/90 rounded-full font-body font-medium shadow-pink transition-all duration-300 hover:scale-105 px-5"
+              onClick={handleBuyNow}
+              data-ocid="product.sticky.primary_button"
+            >
+              Buy Now
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
